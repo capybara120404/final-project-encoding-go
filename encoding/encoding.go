@@ -2,7 +2,6 @@ package encoding
 
 import (
 	"encoding/json"
-	_ "fmt"
 	"os"
 
 	"github.com/Yandex-Practicum/final-project-encoding-go/models"
@@ -11,16 +10,16 @@ import (
 
 // JSONData тип для перекодирования из JSON в YAML
 type JSONData struct {
-	DockerCompose *models.DockerCompose
-	FileInput     string
-	FileOutput    string
+	DockerCompose *models.DockerCompose // данные для сериализации и десериализации
+	FileInput     string                // имя файла, который нужно перекодировать
+	FileOutput    string                // имя файла с результатом перекодирования
 }
 
 // YAMLData тип для перекодирования из YAML в JSON
 type YAMLData struct {
-	DockerCompose *models.DockerCompose
-	FileInput     string
-	FileOutput    string
+	DockerCompose *models.DockerCompose // данные для сериализации и десериализации
+	FileInput     string                // имя файла, который нужно перекодировать
+	FileOutput    string                // имя файла с результатом перекодирования
 }
 
 // MyEncoder интерфейс для структур YAMLData и JSONData
@@ -30,50 +29,64 @@ type MyEncoder interface {
 
 // Encoding перекодирует файл из JSON в YAML
 func (j *JSONData) Encoding() error {
-	var yamlData YAMLData
-	fileInput, err := os.ReadFile(j.FileInput)
+	jsonFile, err := os.ReadFile(j.FileInput)
 	if err != nil {
-		panic("не удалось прочитать файл")
-	}
-	err = json.Unmarshal(fileInput, &yamlData.DockerCompose)
-	if err != nil {
-		panic("не удалось десериализировать")
+		return err
 	}
 
-	fileOutput, err := os.Create(j.FileOutput)
+	err = json.Unmarshal(jsonFile, &j.DockerCompose)
 	if err != nil {
-		panic("не удалось создать файл")
+		return err
 	}
-	defer fileOutput.Close()
-	bytesOfYaml, err := yaml.Marshal(yamlData.DockerCompose)
+
+	yamlData, err := yaml.Marshal(&j.DockerCompose)
 	if err != nil {
-		panic("не удалось преобразовать файл в json")
+		return err
 	}
-	fileOutput.Write(bytesOfYaml)
+
+	yamlFile, err := os.Create(j.FileOutput)
+	if err != nil {
+		return err
+	}
+
+	defer yamlFile.Close()
+
+	_, err = yamlFile.Write(yamlData)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // Encoding перекодирует файл из YAML в JSON
 func (y *YAMLData) Encoding() error {
-	var jsonData JSONData
-	fileInput, err := os.ReadFile(y.FileInput)
+	yamlFile, err := os.ReadFile(y.FileInput)
 	if err != nil {
-		panic("не удалось прочитать файл")
-	}
-	err = yaml.Unmarshal(fileInput, &jsonData.DockerCompose)
-	if err != nil {
-		panic("не удалось десериализировать")
+		return err
 	}
 
-	fileOutput, err := os.Create(y.FileOutput)
+	err = yaml.Unmarshal(yamlFile, &y.DockerCompose)
 	if err != nil {
-		panic("не удалось создать файл")
+		return err
 	}
-	defer fileOutput.Close()
-	bytesOfJson, err := json.Marshal(jsonData.DockerCompose)
+
+	jsonData, err := json.Marshal(&y.DockerCompose)
 	if err != nil {
-		panic("не удалось преобразовать файл в json")
+		return err
 	}
-	fileOutput.Write(bytesOfJson)
+
+	jsonFile, err := os.Create(y.FileOutput)
+	if err != nil {
+		return err
+	}
+
+	defer jsonFile.Close()
+
+	_, err = jsonFile.Write(jsonData)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
